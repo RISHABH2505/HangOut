@@ -1,18 +1,83 @@
 import { useLocation } from "react-router-dom";
-import Navbar from '../Components/Navbar'; 
+import Navbar from '../Components/Navbar';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 
 const Recommendations = () => {
-  const { state } = useLocation();
-  const { recommendations } = state || { recommendations: [] };
+
+  const [recommendations, setRecommendations] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+
+  const locationParam = queryParams.get('location');
+  const budgetParam = queryParams.get('budget');
+  const durationParam = queryParams.get('duration');
+  const ageGroupParam = queryParams.get('age_group');
+  const categoriesParam = queryParams.get('categories');
+
+  useEffect(() => {
+    if (locationParam && budgetParam && durationParam && ageGroupParam) {
+      fetchRecommendations();
+    }
+  }, [locationParam, budgetParam, durationParam, ageGroupParam]);
+
+
+  const fetchRecommendations = async () => {
+    setLoading(true);
+    const url = 'http://127.0.0.1:5000/plan_activity'; // Backend API URL
+
+    const params = {
+      location: locationParam,
+      budget: budgetParam,
+      duration: durationParam,
+      age_group: ageGroupParam,
+      categories: categoriesParam || '',
+    };
+
+    try {
+      const response = await axios.get(url, { params });
+      console.log(response.data.recommendations.itineraries)
+      setRecommendations(response.data.recommendations.itineraries)
+    } catch (err) {
+      setError('Failed to fetch recommendations. Please try again later.');
+      console.error(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   return (
-    <div className="min-h-screen bg-[#FAF7F0] pl-8 pr-8">
-      <Navbar/>
-            <h1 className="text-3xl font-bold text-[#4A4947] text-center mb-6">
+    <div className="">
+      <Navbar />
+      <h1 className="">
         Your Recommended Plan
       </h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {recommendations.length > 0 ? (
+      <div className="">
+        {/* <>{JSON.stringify(recommendations)}</> */}
+        <div>{recommendations.length !== 0 ? recommendations.map((itinerary, index) => (
+          <>
+            <h3>Itinerary {index + 1}</h3>
+            {/* <>{JSON.stringify(itinerary)}</> */}
+            {itinerary.places.length !== 0 ? itinerary.places.map((place, placeIndex) => (
+              <>
+                <h4>Place {placeIndex}</h4>
+                <div>Name : {place.Name}</div>
+                <div>Duration : {place.Duration}</div>
+                <div>Price : {place.Price}</div>
+                <div>Category : {place.Category}</div>
+                <div>----------------------------------------</div>
+              </>
+            )) : <div>No Places</div>}
+            <div>Total Duration : {itinerary.totalDuration}</div>
+            <div>Total Price : {itinerary.totalPrice}</div>
+            <h1>----------------------------------------------------------------</h1>
+          </>
+        )) : <div>No recommendations found</div>}</div>
+        {/* {recommendations ? (
           recommendations.map((place) => (
             <div
               key={place.id}
@@ -34,7 +99,7 @@ const Recommendations = () => {
           <p className="text-center text-gray-600 text-lg">
             No recommendations available.
           </p>
-        )}
+        )} */}
       </div>
     </div>
   );

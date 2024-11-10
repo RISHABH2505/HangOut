@@ -1,65 +1,55 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom"; // Import useNavigate for redirection
 import { places } from "../Components/data"; // Ensure this data includes both cafes and activities
+import axios from 'axios';
+
+
 
 const AIRecommendations = () => {
-  const [location, setLocation] = useState("");
-  const [budget, setBudget] = useState("");
-  const [duration, setDuration] = useState("");
+  const [location, setLocation] = useState("Mumbai");
+  const [budget, setBudget] = useState("1000");
+  const [duration, setDuration] = useState("5");
   const [loading, setLoading] = useState(false); // State to manage loading
   const navigate = useNavigate(); // Initialize the navigate function
 
-  const findBestCombination = (cafes, activities, budget, duration) => {
-    let bestCombination = [];
-    let maxUtilization = { cost: 0, time: 0 };
-
-    const backtrack = (selectedPlaces, remainingBudget, remainingTime, index) => {
-      if (remainingBudget < 0 || remainingTime < 0) return;
-
-      const currentCost = selectedPlaces.reduce((sum, place) => sum + place.price, 0);
-      const currentTime = selectedPlaces.reduce((sum, place) => sum + place.duration, 0);
-
-      if (currentCost <= budget && currentTime <= duration) {
-        if (currentCost > maxUtilization.cost || currentTime > maxUtilization.time) {
-          bestCombination = [...selectedPlaces];
-          maxUtilization = { cost: currentCost, time: currentTime };
-        }
-      }
-
-      for (let i = index; i < cafes.length + activities.length; i++) {
-        const nextPlace = i < cafes.length ? cafes[i] : activities[i - cafes.length];
-        backtrack([...selectedPlaces, nextPlace], remainingBudget - nextPlace.price, remainingTime - nextPlace.duration, i + 1);
-      }
-    };
-
-    backtrack([], budget, duration, 0);
-    return bestCombination;
-  };
-
-  const generateRecommendations = (e) => {
+  const generateRecommendations = async (e) => {
     e.preventDefault();
+    setLoading(true)
 
-    if (location && budget && duration) {
-      setLoading(true); // Start loading
 
-      // Simulate a loading delay of 5 seconds
-      setTimeout(() => {
-        const maxBudget = parseInt(budget);
-        const maxDuration = parseInt(duration);
+    // const url = 'http://127.0.0.1:5000/plan_activity';
+    // const params = {
+    //   location: location,
+    //   budget: budget,
+    //   duration: duration,
+    //   age_group: '16-40',
+    //   categories: ''
+    // };
 
-        const filteredPlaces = places.filter((place) => place.location.toLowerCase() === location.toLowerCase());
-        const cafes = filteredPlaces.filter((place) => place.type === "cafe");
-        const activities = filteredPlaces.filter((place) => place.type === "activity");
-        const bestCombination = findBestCombination(cafes, activities, maxBudget, maxDuration);
+    const queryParams = new URLSearchParams({
+      location: location,
+      budget: budget,
+      duration: duration,
+      age_group: '16-40',
+      categories: ''
+    }).toString();
 
-        // Redirect to /recommendations with the selected recommendations
-        navigate("/recommendations", {
-          state: { location, budget, duration, recommendations: bestCombination },
-        });
-      }, 3000); // 5000 milliseconds = 5 seconds
-    } else {
-      alert("Please fill in all fields!");
+
+    try {
+      // const response = await axios.get(url, { params });
+
+      // Navigate to recommendations page with the bestCombination
+      navigate(`/recommendations?${queryParams}`);
+
     }
+    catch (err) {
+      console.log(err.message); // Handle errors
+    } finally {
+      setLoading(false); // Stop loading
+    }
+
+
+
   };
 
   return (
